@@ -1,0 +1,9 @@
+airflow.db
+airflow.db.backup.*
+*.log
+logs/
+__pycache__/
+*.pyc
+airflow.cfg
+webserver_config.py
+.DS_Store
