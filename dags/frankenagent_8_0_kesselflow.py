@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import os, sqlite3, logging, time, threading, subprocess
+import os, sqlite3, logging, time, threading, subprocess, shlex
 from datetime import datetime
 import numpy as np
 import requests
@@ -79,10 +79,11 @@ def execute_task(task_id, task_type, content):
             output=content
             update_vector(task_id, content)
         else:
-            output=subprocess.check_output(content, shell=True, stderr=subprocess.STDOUT).decode()
+            output=subprocess.check_output(shlex.split(content), shell=False, stderr=subprocess.STDOUT).decode()
         status="done"
     except Exception as e:
-        output=str(e)
+        logging.error(f"Execution failed for task {task_id}: {e}")
+        output="An error occurred during execution."
         status="failed"
     db_execute("UPDATE tasks SET status=?, result=? WHERE id=?", (status, output, task_id))
 
