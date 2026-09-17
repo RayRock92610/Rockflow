@@ -40,7 +40,7 @@ compress_backup() {
         return 1
     fi
     ARCHIVE="$BACKUP_DIR/kesselflow_backup_$DATE_NOW.tar.gz"
-    tar -czf "$ARCHIVE" $FILES
+    find "$KF_HOME" -type f -mtime -"${DAYS}" -print0 | tar -czf "$ARCHIVE" --null -T -
     log "✅ Backup created: $ARCHIVE"
     echo "$ARCHIVE"
 }
