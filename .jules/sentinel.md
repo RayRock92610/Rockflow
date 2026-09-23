@@ -6,3 +6,7 @@
 **Vulnerability:** Command injection vulnerability in `backup_kesselflow.sh` where `tar -czf "$ARCHIVE" $FILES` is used. Unquoted variable expansion like `$FILES` in a command is vulnerable to option injection. If a malicious file name starts with `--checkpoint`, `tar` would execute arbitrary code.
 **Learning:** Using unquoted shell variables containing file names in commands like `tar` is a critical risk, allowing option injection and code execution.
 **Prevention:** Always use `find -print0` piped to commands that support `--null -T -` (like `tar`) or `xargs -0` to handle file names safely and prevent option injection.
+## 2024-05-15 - [Strict Command Execution Allowlist]
+**Vulnerability:** Agent command execution used a weak denylist (preventing only 'rm -rf' and 'sudo') or blindly trusted DB contents.
+**Learning:** Denylists are fundamentally flawed for command execution. Attackers can bypass them easily (e.g., 'rm -f' instead of 'rm -rf', or using aliases).
+**Prevention:** Always use a strict allowlist of known-safe commands and arguments when executing shell operations based on user or database input.
