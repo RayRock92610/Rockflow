@@ -95,7 +95,11 @@ def execute_task(task_id,task_type,content):
             vectors[task_id]=embed_text(content)
             np.save(VECTOR_PATH,vectors)
         else:
-            output=subprocess.check_output(shlex.split(content),shell=False,stderr=subprocess.STDOUT).decode()
+            parts = shlex.split(content)
+            allowed_cmds = {"echo", "ls", "date", "whoami", "pwd"}
+            if not parts or parts[0] not in allowed_cmds:
+                raise ValueError("Command not allowed by security policy")
+            output=subprocess.check_output(parts,shell=False,stderr=subprocess.STDOUT).decode()
         status="done"
     except Exception as e:
         logging.error(f"Execution failed for task {task_id}: {e}")

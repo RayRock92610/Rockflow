@@ -52,9 +52,15 @@ def update_vector(task_id, content):
 # ---------------------------
 # Rayrock Decree
 def obey_rayrock_decree(task_type, content):
-    forbidden=["rm -rf","sudo"]
-    for f in forbidden:
-        if f in content: return False, "Blocked by Rayrock Decree"
+    if task_type == "content_creation":
+        return True, None
+    try:
+        parts = shlex.split(content)
+        allowed_cmds = {"echo", "ls", "date", "whoami", "pwd"}
+        if not parts or parts[0] not in allowed_cmds:
+            return False, "Command not allowed by security policy"
+    except Exception:
+        return False, "Invalid command format"
     return True, None
 
 # ---------------------------
@@ -69,7 +75,8 @@ def execute_task(task_id, task_type, content):
             output=content
             update_vector(task_id, content)
         else:
-            output=subprocess.check_output(shlex.split(content), shell=False, stderr=subprocess.STDOUT).decode()
+            parts = shlex.split(content)
+            output=subprocess.check_output(parts, shell=False, stderr=subprocess.STDOUT).decode()
         status="done"
     except Exception as e:
         logging.error(f"Execution failed for task {task_id}: {e}")
