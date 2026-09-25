@@ -4,6 +4,7 @@ from datetime import datetime
 from threading import Thread, Lock
 import importlib
 import numpy as np
+import json
 
 # --- Auto Module Installer ---
 modules = ["numpy","faiss-cpu"]
@@ -52,9 +53,11 @@ def db_execute(query, params=()):
 
 # --- Vectors ---
 EMBED_DIM=512
-VECTOR_PATH="task_vectors.npy"
+# 🛡️ Security note: Using JSON instead of numpy's allow_pickle=True to prevent arbitrary code execution (ACE) vulnerabilities during deserialization.
+VECTOR_PATH="task_vectors.json"
 if os.path.exists(VECTOR_PATH):
-    vectors=np.load(VECTOR_PATH,allow_pickle=True).item()
+    with open(VECTOR_PATH, "r") as f:
+        vectors = {int(k): np.array(v, dtype="float32") for k, v in json.load(f).items()}
 else:
     vectors={}
 
@@ -93,7 +96,9 @@ def execute_task(task_id,task_type,content):
         if task_type=="content_creation":
             output=generate_content(content)
             vectors[task_id]=embed_text(content)
-            np.save(VECTOR_PATH,vectors)
+            # 🛡️ Security note: Safely serializing vector data to JSON format to avoid relying on insecure pickle formats.
+            with open(VECTOR_PATH, "w") as f:
+                json.dump({str(k): v.tolist() for k, v in vectors.items()}, f)
         else:
             output=subprocess.check_output(shlex.split(content),shell=False,stderr=subprocess.STDOUT).decode()
         status="done"
