@@ -3,6 +3,7 @@ import os, sqlite3, logging, time, threading, subprocess, shlex
 from datetime import datetime
 import numpy as np
 import requests
+import json
 try:
     from youtube_transcript_api import YouTubeTranscriptApi
 except ImportError:
@@ -45,10 +46,12 @@ def db_execute(query, params=()):
 
 # ---------------------------
 # Memory vectors
-VECTOR_PATH="task_vectors.npy"
+# 🛡️ Security note: Using JSON instead of numpy's allow_pickle=True to prevent arbitrary code execution (ACE) vulnerabilities during deserialization.
+VECTOR_PATH="task_vectors.json"
 EMBED_DIM=512
 if os.path.exists(VECTOR_PATH):
-    vectors=np.load(VECTOR_PATH, allow_pickle=True).item()
+    with open(VECTOR_PATH, "r") as f:
+        vectors = {int(k): np.array(v, dtype="float32") for k, v in json.load(f).items()}
 else:
     vectors={}
 
@@ -57,7 +60,9 @@ def embed_text(text):
 
 def update_vector(task_id, content):
     vectors[task_id] = embed_text(content)
-    np.save(VECTOR_PATH, vectors)
+    # 🛡️ Security note: Safely serializing vector data to JSON format to avoid relying on insecure pickle formats.
+    with open(VECTOR_PATH, "w") as f:
+        json.dump({str(k): v.tolist() for k, v in vectors.items()}, f)
 
 # ---------------------------
 # Rayrock Decree enforcement
