@@ -37,8 +37,9 @@ def github_repo_monitor():
                 'open_issues': repo.open_issues_count,
                 'mode': 'api'
             }
-        except Exception as e:
-            print(f"Error: {e}")
+        except Exception:
+            import logging
+            logging.error("GitHub API request failed.")
             return {'name': 'error', 'mode': 'error'}
     
     @task()
