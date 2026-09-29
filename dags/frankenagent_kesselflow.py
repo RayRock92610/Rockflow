@@ -102,8 +102,8 @@ def execute_task(task_id,task_type,content):
         else:
             output=subprocess.check_output(shlex.split(content),shell=False,stderr=subprocess.STDOUT).decode()
         status="done"
-    except Exception as e:
-        logging.error(f"Execution failed for task {task_id}: {e}")
+    except Exception:
+        logging.error(f"Execution failed for task {task_id}")
         output="An error occurred during execution."
         status="failed"
     db_execute("UPDATE tasks SET status=?, result=? WHERE id=?", (status,output,task_id))
