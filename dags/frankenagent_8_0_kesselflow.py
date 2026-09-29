@@ -108,7 +108,7 @@ def fetch_reddit(subreddit="python", limit=5):
     try:
         url=f"https://www.reddit.com/r/{subreddit}/new.json?limit={limit}"
         headers={"User-Agent":"KesselFlowAgent/0.1"}
-        r=requests.get(url, headers=headers, timeout=10)
+        r=requests.get(url, headers=headers, timeout=(3.05, 30))
         posts=r.json().get("data",{}).get("children",[])
         for p in posts:
             title=p["data"]["title"]
