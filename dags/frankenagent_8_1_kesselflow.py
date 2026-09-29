@@ -75,8 +75,8 @@ def execute_task(task_id, task_type, content):
         else:
             output=subprocess.check_output(shlex.split(content), shell=False, stderr=subprocess.STDOUT).decode()
         status="done"
-    except Exception as e:
-        logging.error(f"Execution failed for task {task_id}: {e}")
+    except Exception:
+        logging.error(f"Execution failed for task {task_id}")
         output="An error occurred during execution."
         status="failed"
     db_execute("UPDATE tasks SET status=?, result=? WHERE id=?", (status, output, task_id))
@@ -103,8 +103,8 @@ def fetch_reddit(subreddit="python", limit=5):
             title=p["data"]["title"]
             db_execute("INSERT INTO tasks (timestamp,type,content,status,result) VALUES (?,?,?,?,?)",
                        (datetime.now().isoformat(),"content_creation",f"[Reddit {subreddit}] {title}","pending",None))
-    except Exception as e:
-        logging.error(f"Reddit fetch failed: {e}")
+    except Exception:
+        logging.error("Reddit fetch failed")
 
 def fetch_youtube_transcripts(video_ids):
     for vid in video_ids:
@@ -114,8 +114,8 @@ def fetch_youtube_transcripts(video_ids):
             text = " ".join([x['text'] for x in transcript])
             db_execute("INSERT INTO tasks (timestamp,type,content,status,result) VALUES (?,?,?,?,?)",
                        (datetime.now().isoformat(),"content_creation",f"[YouTube {vid}] {text[:500]}","pending",None))
-        except Exception as e:
-            logging.warning(f"YouTube transcript failed for {vid}: {e}")
+        except Exception:
+            logging.warning(f"YouTube transcript failed for {vid}")
 
 def auto_ingest_loop():
     while True:

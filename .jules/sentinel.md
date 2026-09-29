@@ -14,3 +14,7 @@
 **Vulnerability:** Raw exception strings printed directly to standard output/logs (`print(f"Error: {e}")`) when external API requests failed in DAG tasks.
 **Learning:** Catching and printing the raw Python `Exception` object can leak sensitive information like HTTP URLs, query parameters, API keys, or request payloads directly into Airflow task execution logs, creating a credential exposure risk.
 **Prevention:** Never print or log raw exceptions directly when integrating with third-party APIs. Catch the exception and use generic error messages via standard logging (`logging.error("API request failed")`) instead to fail securely.
+## 2025-02-23 - Fix Sensitive Data Leakage in DAG exceptions
+**Vulnerability:** Catching `Exception as e` and logging `e` directly via `logging.error(f"...: {e}")` exposes raw exception objects (which may include API keys, query parameters, stack traces, or other sensitive details) in DAG execution logs.
+**Learning:** Binding and logging the raw Python exception object directly can result in sensitive system internals or credential leakage into persistent logs, increasing attack surface area or exposing authentication tokens.
+**Prevention:** Do not log or print the raw `Exception` object (e.g. `except Exception as e:`). Instead, catch the generic exception (`except Exception:`) and log a static, generic error message (e.g., `logging.error("Execution failed for task")`).
