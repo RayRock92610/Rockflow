@@ -18,3 +18,7 @@
 **Vulnerability:** Catching `Exception as e` and logging `e` directly via `logging.error(f"...: {e}")` exposes raw exception objects (which may include API keys, query parameters, stack traces, or other sensitive details) in DAG execution logs.
 **Learning:** Binding and logging the raw Python exception object directly can result in sensitive system internals or credential leakage into persistent logs, increasing attack surface area or exposing authentication tokens.
 **Prevention:** Do not log or print the raw `Exception` object (e.g. `except Exception as e:`). Instead, catch the generic exception (`except Exception:`) and log a static, generic error message (e.g., `logging.error("Execution failed for task")`).
+## 2025-02-23 - Fix Missing Strict Timeout Tuples
+**Vulnerability:** External requests were using standard single integer timeouts. This allows for blocking threads for arbitrary periods during the reading step after a successful connection.
+**Learning:** Only explicit tuple timeouts correctly prevent thread hanging and DoS risks caused by an infinite read loop from the socket after the connection occurs.
+**Prevention:** Always ensure tuple timeouts (e.g. `timeout=(3.05, 30)`) are set on HTTP requests to external APIs.
