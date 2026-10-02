@@ -18,3 +18,8 @@
 **Vulnerability:** Catching `Exception as e` and logging `e` directly via `logging.error(f"...: {e}")` exposes raw exception objects (which may include API keys, query parameters, stack traces, or other sensitive details) in DAG execution logs.
 **Learning:** Binding and logging the raw Python exception object directly can result in sensitive system internals or credential leakage into persistent logs, increasing attack surface area or exposing authentication tokens.
 **Prevention:** Do not log or print the raw `Exception` object (e.g. `except Exception as e:`). Instead, catch the generic exception (`except Exception:`) and log a static, generic error message (e.g., `logging.error("Execution failed for task")`).
+
+## 2024-10-01 - Fix Command Injection risk via strict command allowlist
+**Vulnerability:** While `shell=False` prevents shell operator chaining, passing untrusted input directly into `shlex.split()` allows the caller to control the target binary (`args[0]`). If input is user-controlled, arbitrary binaries can still be invoked.
+**Learning:** `shell=False` + `shlex.split()` is insufficient if the user controls `args[0]`. It still carries a command injection risk by allowing the execution of unauthorized binaries.
+**Prevention:** Do not attempt ad-hoc input sanitization or regex filtering. Always use a strict command allowlist to verify the base command (`args[0]`) before executing it via `subprocess`.

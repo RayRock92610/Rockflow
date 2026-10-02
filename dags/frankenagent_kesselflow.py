@@ -100,8 +100,13 @@ def execute_task(task_id,task_type,content):
             with open(VECTOR_PATH, "w") as f:
                 json.dump({str(k): v.tolist() for k, v in vectors.items()}, f)
         else:
-            output=subprocess.check_output(shlex.split(content),shell=False,stderr=subprocess.STDOUT).decode()
-        status="done"
+            args = shlex.split(content)
+            if not args or args[0] not in ["echo", "ls", "pwd", "date", "whoami", "uname", "cat"]:
+                output = "Blocked by Rayrock Decree: Command not in allowlist"
+                status = "blocked"
+            else:
+                output=subprocess.check_output(args,shell=False,stderr=subprocess.STDOUT).decode()
+                status="done"
     except Exception:
         logging.error(f"Execution failed for task {task_id}")
         output="An error occurred during execution."

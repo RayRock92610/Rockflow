@@ -56,9 +56,13 @@ def update_vector(task_id, content):
 # ---------------------------
 # Rayrock Decree
 def obey_rayrock_decree(task_type, content):
-    forbidden=["rm -rf","sudo"]
-    for f in forbidden:
-        if f in content: return False, "Blocked by Rayrock Decree"
+    if task_type != "content_creation":
+        try:
+            args = shlex.split(content)
+            if not args or args[0] not in ["echo", "ls", "pwd", "date", "whoami", "uname", "cat"]:
+                return False, "Blocked by Rayrock Decree: Command not in allowlist"
+        except Exception:
+            return False, "Blocked by Rayrock Decree: Invalid command format"
     return True, None
 
 # ---------------------------
