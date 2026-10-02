@@ -14,3 +14,7 @@
 **Vulnerability:** Raw exception strings printed directly to standard output/logs (`print(f"Error: {e}")`) when external API requests failed in DAG tasks.
 **Learning:** Catching and printing the raw Python `Exception` object can leak sensitive information like HTTP URLs, query parameters, API keys, or request payloads directly into Airflow task execution logs, creating a credential exposure risk.
 **Prevention:** Never print or log raw exceptions directly when integrating with third-party APIs. Catch the exception and use generic error messages via standard logging (`logging.error("API request failed")`) instead to fail securely.
+## 2024-05-18 - Fix Command Injection via Strict Allowlist
+**Vulnerability:** Weak denylist inside `obey_rayrock_decree` only blocked `rm -rf` and `sudo`, allowing for execution of arbitrary commands.
+**Learning:** Using a weak substring blocklist against command executions is insufficient and provides a false sense of security. Attackers can bypass it using alternative paths, aliases, and other executables.
+**Prevention:** Implement a strict allowlist. Tokenize command arguments utilizing `shlex.split`, apply `os.path.basename` on the binary to prevent path traversal bypass, enforce an allowed binary list, block interpreter flag abuse, and execute with `shell=False`.

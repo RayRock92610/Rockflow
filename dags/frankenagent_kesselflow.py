@@ -74,6 +74,39 @@ print("Kessel Flow ONLINE | Super Recall ON | Memory entries:", len(vectors))
 
 # --- Functions ---
 def embed_text(text): return np.random.rand(EMBED_DIM).astype("float32")
+
+ALLOWED_COMMANDS = {
+    "git",
+    "pytest",
+    "python3",
+    "ls",
+    "echo",
+}
+
+def obey_rayrock_decree(content: str) -> list[str]:
+    """
+    Validates and tokenizes the command payload against a strict allowlist.
+    Raises ValueError if the executable is unauthorized or tokens are malformed.
+    """
+    if not content or not content.strip():
+        raise ValueError("Empty command payload rejected by decree.")
+
+    tokens = shlex.split(content.strip())
+    if not tokens:
+        raise ValueError("Invalid command formatting.")
+
+    # Extract base executable name (strip directory paths to avoid path traversal)
+    executable = os.path.basename(tokens[0])
+
+    if executable not in ALLOWED_COMMANDS:
+        raise ValueError(f"Command '{executable}' is unauthorized by decree.")
+
+    # Guard against interpreter abuse (e.g., python3 -c 'import os; os.system(...)')
+    if executable == "python3" and any(arg in ("-c", "-m") for arg in tokens[1:]):
+        raise ValueError("Arbitrary execution flags (-c, -m) forbidden for python3.")
+
+    return tokens
+
 def generate_content(prompt,max_tokens=150,top_k=5):
     context=""
     if vectors:
@@ -100,11 +133,12 @@ def execute_task(task_id,task_type,content):
             with open(VECTOR_PATH, "w") as f:
                 json.dump({str(k): v.tolist() for k, v in vectors.items()}, f)
         else:
-            output=subprocess.check_output(shlex.split(content),shell=False,stderr=subprocess.STDOUT).decode()
+            cmd_tokens = obey_rayrock_decree(content)
+            output=subprocess.check_output(cmd_tokens, shell=False, text=True, timeout=30, stderr=subprocess.STDOUT)
         status="done"
     except Exception as e:
-        logging.error(f"Execution failed for task {task_id}: {e}")
-        output="An error occurred during execution."
+        logging.error("Task failed due to %s for task_id=%s", type(e).__name__, task_id)
+        output=json.dumps({"status": "FAILED", "error_type": type(e).__name__})
         status="failed"
     db_execute("UPDATE tasks SET status=?, result=? WHERE id=?", (status,output,task_id))
 
