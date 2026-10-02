@@ -97,8 +97,21 @@ def fetch_reddit(subreddit="python", limit=5):
     try:
         url=f"https://www.reddit.com/r/{subreddit}/new.json?limit={limit}"
         headers={"User-Agent":"KesselFlowAgent/0.1"}
-        r=requests.get(url, headers=headers, timeout=10)
-        posts=r.json().get("data",{}).get("children",[])
+        r=requests.get(url, headers=headers, timeout=(3.05, 30), stream=True)
+        r.raw.decode_content = True
+        chunks = []
+        bytes_read = 0
+        limit_bytes = 1048576
+        for chunk in r.iter_content(chunk_size=8192):
+            chunks.append(chunk)
+            bytes_read += len(chunk)
+            if bytes_read > limit_bytes:
+                return
+        content_bytes = b"".join(chunks)
+        if not content_bytes:
+            return
+        content_str = content_bytes.decode('utf-8', errors='replace')
+        posts=json.loads(content_str).get("data",{}).get("children",[])
         for p in posts:
             title=p["data"]["title"]
             db_execute("INSERT INTO tasks (timestamp,type,content,status,result) VALUES (?,?,?,?,?)",
