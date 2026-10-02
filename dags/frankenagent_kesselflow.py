@@ -91,7 +91,44 @@ def generate_content(prompt,max_tokens=150,top_k=5):
     resp=llm(full_prompt,max_tokens=max_tokens)
     return resp.get("choices",[{}])[0].get("text","[No output]")
 
+ALLOWED_COMMANDS = {
+    "git",
+    "pytest",
+    "python3",
+    "ls",
+    "echo",
+}
+
+def obey_rayrock_decree(task_type, content):
+    if task_type == "content_creation" or task_type == "personal_assistant":
+        return True, None, content
+
+    if not content or not content.strip():
+        return False, "Empty command payload rejected by decree.", None
+
+    try:
+        tokens = shlex.split(content.strip())
+    except ValueError:
+        return False, "Invalid command formatting.", None
+
+    if not tokens:
+        return False, "Invalid command formatting.", None
+
+    executable = os.path.basename(tokens[0])
+
+    if executable not in ALLOWED_COMMANDS:
+        return False, f"Command '{executable}' is unauthorized by decree.", None
+
+    if executable == "python3" and any(arg in ("-c", "-m") for arg in tokens[1:]):
+        return False, "Arbitrary execution flags (-c, -m) forbidden for python3.", None
+
+    return True, None, tokens
+
 def execute_task(task_id,task_type,content):
+    allowed, msg, cmd_tokens = obey_rayrock_decree(task_type, content)
+    if not allowed:
+        db_execute("UPDATE tasks SET status=?, result=? WHERE id=?", ("blocked", msg, task_id))
+        return
     try:
         if task_type=="content_creation":
             output=generate_content(content)
@@ -99,12 +136,15 @@ def execute_task(task_id,task_type,content):
             # 🛡️ Security note: Safely serializing vector data to JSON format to avoid relying on insecure pickle formats.
             with open(VECTOR_PATH, "w") as f:
                 json.dump({str(k): v.tolist() for k, v in vectors.items()}, f)
+        elif task_type == "personal_assistant":
+            output = content
         else:
-            output=subprocess.check_output(shlex.split(content),shell=False,stderr=subprocess.STDOUT).decode()
+            output = subprocess.check_output(cmd_tokens, shell=False, stderr=subprocess.STDOUT, text=True, timeout=30)
         status="done"
-    except Exception:
-        logging.error(f"Execution failed for task {task_id}")
-        output="An error occurred during execution."
+    except Exception as e:
+        error_type = type(e).__name__
+        logging.error("Task failed due to %s for task_id=%s", error_type, task_id)
+        output = json.dumps({"status": "FAILED", "error_type": error_type})
         status="failed"
     db_execute("UPDATE tasks SET status=?, result=? WHERE id=?", (status,output,task_id))
 
