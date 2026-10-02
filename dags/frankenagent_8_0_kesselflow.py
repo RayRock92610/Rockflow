@@ -46,6 +46,12 @@ def db_execute(query, params=()):
             return c.fetchall()
         return None
 
+def db_executemany(query, params_seq=()):
+    with db_lock:
+        c.executemany(query, params_seq)
+        conn.commit()
+
+
 # ---------------------------
 # Memory vectors
 # 🛡️ Security note: Using JSON instead of numpy's allow_pickle=True to prevent arbitrary code execution (ACE) vulnerabilities during deserialization.
@@ -142,22 +148,27 @@ def fetch_reddit(subreddit="python", limit=5):
         headers={"User-Agent":"KesselFlowAgent/0.1"}
         r=requests.get(url, headers=headers, timeout=10)
         posts=r.json().get("data",{}).get("children",[])
-        for p in posts:
-            title=p["data"]["title"]
-            db_execute("INSERT INTO tasks (timestamp,type,content,status,result) VALUES (?,?,?,?,?)",
-                       (datetime.now().isoformat(),"content_creation",f"[Reddit {subreddit}] {title}","pending",None))
+        params_seq = [
+            (datetime.now().isoformat(), "content_creation", f"[Reddit {subreddit}] {p['data']['title']}", "pending", None)
+            for p in posts
+        ]
+        if params_seq:
+            db_executemany("INSERT INTO tasks (timestamp,type,content,status,result) VALUES (?,?,?,?,?)", params_seq)
     except Exception:
         logging.error("Reddit fetch failed")
 
 def fetch_youtube_transcripts(video_ids):
+    params_seq = []
     for vid in video_ids:
         try:
             transcript = YouTubeTranscriptApi.get_transcript(vid)
             text = " ".join([x['text'] for x in transcript])
-            db_execute("INSERT INTO tasks (timestamp,type,content,status,result) VALUES (?,?,?,?,?)",
-                       (datetime.now().isoformat(),"content_creation",f"[YouTube {vid}] {text[:500]}","pending",None))
+            params_seq.append((datetime.now().isoformat(),"content_creation",f"[YouTube {vid}] {text[:500]}","pending",None))
         except Exception:
             logging.warning(f"YouTube transcript failed for {vid}")
+
+    if params_seq:
+        db_executemany("INSERT INTO tasks (timestamp,type,content,status,result) VALUES (?,?,?,?,?)", params_seq)
 
 def auto_ingest_loop():
     while True:
