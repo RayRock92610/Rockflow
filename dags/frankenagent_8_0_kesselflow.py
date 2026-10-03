@@ -146,16 +146,26 @@ def fetch_reddit(subreddit="python", limit=5):
     try:
         url=f"https://www.reddit.com/r/{subreddit}/new.json?limit={limit}"
         headers={"User-Agent":"KesselFlowAgent/0.1"}
-        r=requests.get(url, headers=headers, timeout=10)
-        posts=r.json().get("data",{}).get("children",[])
+        r=requests.get(url, headers=headers, timeout=10, stream=True)
+        r.raw.decode_content = True
+        accumulated_data = b""
+        max_bytes = 5 * 1024 * 1024  # 5MB limit
+        for chunk in r.iter_content(chunk_size=8192):
+            if chunk:
+                accumulated_data += chunk
+                if len(accumulated_data) > max_bytes:
+                    raise ValueError("Response exceeded memory limit")
+        text_data = accumulated_data.decode("utf-8", errors="replace")
+        posts=json.loads(text_data).get("data",{}).get("children",[])
         params_seq = [
             (datetime.now().isoformat(), "content_creation", f"[Reddit {subreddit}] {p['data']['title']}", "pending", None)
             for p in posts
         ]
         if params_seq:
             db_executemany("INSERT INTO tasks (timestamp,type,content,status,result) VALUES (?,?,?,?,?)", params_seq)
-    except Exception:
-        logging.error("Reddit fetch failed")
+    except Exception as e:
+        error_type = type(e).__name__
+        logging.error("Reddit fetch failed due to %s", error_type)
 
 def fetch_youtube_transcripts(video_ids):
     params_seq = []
