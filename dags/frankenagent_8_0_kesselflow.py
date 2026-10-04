@@ -174,8 +174,10 @@ def fetch_youtube_transcripts(video_ids):
             transcript = YouTubeTranscriptApi.get_transcript(vid)
             text = " ".join([x['text'] for x in transcript])
             params_seq.append((datetime.now().isoformat(),"content_creation",f"[YouTube {vid}] {text[:500]}","pending",None))
-        except Exception:
-            logging.warning(f"YouTube transcript failed for {vid}")
+        except Exception as e:
+            # 🛡️ Security note: Log the exception type securely without leaking full stack traces.
+            error_type = type(e).__name__
+            logging.warning(f"YouTube transcript failed due to {error_type} for {vid}")
 
     if params_seq:
         db_executemany("INSERT INTO tasks (timestamp,type,content,status,result) VALUES (?,?,?,?,?)", params_seq)
