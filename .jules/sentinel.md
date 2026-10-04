@@ -6,3 +6,7 @@
 **Vulnerability:** Command injection vulnerability in `backup_kesselflow.sh` where `tar -czf "$ARCHIVE" $FILES` is used. Unquoted variable expansion like `$FILES` in a command is vulnerable to option injection. If a malicious file name starts with `--checkpoint`, `tar` would execute arbitrary code.
 **Learning:** Using unquoted shell variables containing file names in commands like `tar` is a critical risk, allowing option injection and code execution.
 **Prevention:** Always use `find -print0` piped to commands that support `--null -T -` (like `tar`) or `xargs -0` to handle file names safely and prevent option injection.
+## 2026-10-04 - Command Injection Defense: Denylist to Allowlist
+**Vulnerability:** Weak denylist in `obey_rayrock_decree` (`rm -rf`, `sudo`) bypassed via argument variation or alternative executables.
+**Learning:** Substring denylists provide false security against dynamic command execution; commands must be tokenized and validated against an explicit base-binary allowlist.
+**Prevention:** Enforce strict allowlists on executable tokens and avoid string-matching defenses on shell payloads.

@@ -52,9 +52,20 @@ def update_vector(task_id, content):
 # ---------------------------
 # Rayrock Decree
 def obey_rayrock_decree(task_type, content):
-    forbidden=["rm -rf","sudo"]
-    for f in forbidden:
-        if f in content: return False, "Blocked by Rayrock Decree"
+    if task_type == "content_creation":
+        return True, None
+
+    try:
+        args = shlex.split(content)
+        if not args:
+            return False, "Execution rejected: command not permitted by policy"
+
+        allowlist = {"python3", "pytest", "git", "ls", "echo"}
+        if args[0] not in allowlist:
+            return False, "Execution rejected: command not permitted by policy"
+    except Exception:
+        return False, "Execution rejected: command not permitted by policy"
+
     return True, None
 
 # ---------------------------
