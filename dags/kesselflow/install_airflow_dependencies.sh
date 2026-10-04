@@ -1,8 +1,8 @@
 #!/bin/bash
-# Fix Airflow Missing Dependencies - UserLAnd Edition
+# Install Airflow Missing Dependencies - UserLAnd Edition
 
 echo "╔════════════════════════════════════════════════════╗"
-echo "║   Airflow Dependency Fixer - KesselFlow           ║"
+echo "║   Airflow Dependency Installer - KesselFlow        ║"
 echo "╚════════════════════════════════════════════════════╝"
 echo ""
 
