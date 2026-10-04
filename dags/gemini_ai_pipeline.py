@@ -2,16 +2,20 @@
 Gemini AI Pipeline
 Demonstrates Google Gemini API integration
 """
-from datetime import datetime, timedelta
+import logging
+from datetime import datetime, timezone
+
 from airflow.decorators import dag, task
 from airflow.models import Variable
+
+logger = logging.getLogger(__name__)
 
 @dag(
     dag_id='gemini_ai_pipeline',
     default_args={'owner': 'airflow', 'retries': 2},
     description='AI processing using Google Gemini API',
-    schedule_interval='@daily',
-    start_date=datetime(2024, 1, 1),
+    schedule='@daily',
+    start_date=datetime(2024, 1, 1, tzinfo=timezone.utc),
     catchup=False,
     tags=['gemini', 'ai'],
 )
@@ -21,7 +25,7 @@ def gemini_ai_pipeline():
     def fetch_content():
         return {
             'text': 'Apache Airflow is a workflow orchestration platform.',
-            'timestamp': datetime.now().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         }
     
     @task()
@@ -40,9 +44,8 @@ def gemini_ai_pipeline():
             return {'summary': response.text, 'mode': 'api'}
         except Exception as e:
             # 🛡️ Security note: Log the exception type securely without leaking full stack traces.
-            import logging
             error_type = type(e).__name__
-            logging.error("Gemini API request failed due to %s.", error_type)
+            logger.error("Gemini API request failed due to %s.", error_type)
             return {'summary': 'Error occurred', 'mode': 'error'}
     
     @task()
