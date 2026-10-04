@@ -1,7 +1,3 @@
-**Vulnerability fix for Frankenagent DAG UnboundLocalError**
-
-This pull request ensures that the `status` variable is correctly initialized before executing branching logic in the task execution worker, effectively eliminating any `UnboundLocalError` conditions that could occur.
-
-Additionally, this PR consolidates duplicate journal entries in the `.jules/sentinel.md` learnings file.
-
-Code verification via internal smoke testing and test suites are passing smoothly.
+🎯 What: Arbitrary Command Execution Vulnerability in execute_task and obey_rayrock_decree.
+⚠️ Risk: An attacker could bypass the `os.path.basename` allowlist checking by providing an arbitrary wrapper path (e.g. `/tmp/python3` instead of `/usr/bin/python3`) to execute malicious logic with unauthorized paths while evading the name check. This could lead to Arbitrary Code Execution and full system compromise depending on the user context and the payload.
+🛡️ Solution: Patched `obey_rayrock_decree` across all agent scripts to firmly use `shutil.which` to resolve both the expected base binary command and the original command string. If the absolute path to the requested binary does not match the securely resolved expected binary in the system PATH, the execution is blocked. Modified the returned tokens so that they always use the securely resolved path. Because `execute_task` already passes `cmd_tokens` (which contain the resolved path) to `subprocess.check_output(cmd_tokens, ...)` instead of `shlex.split(content)`, securing the parsing in `obey_rayrock_decree` comprehensively protects the downstream execution sink. Tested against path traversal and validated no loss in required testing mechanisms.

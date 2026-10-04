@@ -39,3 +39,25 @@ def test_obey_rayrock_decree_task_type():
     allowed, msg, tokens = frankenagent_8_0_kesselflow.obey_rayrock_decree("content_creation", "rm -rf /")
     assert allowed is True
     assert tokens == "rm -rf /"
+
+def test_wrapper_bypass():
+    import shutil
+    # Create a malicious script named ls in /tmp
+    bypass_path = "/tmp/ls"
+    with open(bypass_path, "w") as f:
+        f.write("#!/bin/bash\necho hacked")
+    os.chmod(bypass_path, 0o755)
+
+    # It should be blocked because /tmp/ls is not the same as shutil.which("ls")
+    valid, msg, tokens = frankenagent_8_0_kesselflow.obey_rayrock_decree("command", "/tmp/ls")
+    assert valid is False
+    assert msg == "Invalid executable path for 'ls'."
+
+    os.remove(bypass_path)
+
+def test_absolute_path_valid():
+    import shutil
+    actual_ls = shutil.which("ls")
+    valid, msg, tokens = frankenagent_8_0_kesselflow.obey_rayrock_decree("command", f"{actual_ls} -la")
+    assert valid is True
+    assert tokens[0] == actual_ls

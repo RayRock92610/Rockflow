@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import os, sqlite3, logging, time, threading, subprocess, shlex
+import os, sqlite3, logging, time, threading, subprocess, shlex, shutil
 from datetime import datetime
 import numpy as np
 import requests
@@ -98,6 +98,12 @@ def obey_rayrock_decree(task_type, content):
         return False, "Invalid command formatting.", None
 
     executable = os.path.basename(tokens[0])
+    # 🛡️ Sentinel: Enforce exact binary matching to prevent wrapper bypasses
+    resolved_path = shutil.which(tokens[0])
+    expected_path = shutil.which(executable)
+    if not resolved_path or resolved_path != expected_path:
+        return False, f"Invalid executable path for '{executable}'.", None
+    tokens[0] = resolved_path
 
     if executable not in ALLOWED_COMMANDS:
         return False, f"Command '{executable}' is unauthorized by decree.", None
