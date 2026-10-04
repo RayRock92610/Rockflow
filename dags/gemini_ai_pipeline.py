@@ -5,6 +5,9 @@ Demonstrates Google Gemini API integration
 from datetime import datetime, timedelta
 from airflow.decorators import dag, task
 from airflow.models import Variable
+import logging
+
+logger = logging.getLogger(__name__)
 
 @dag(
     dag_id='gemini_ai_pipeline',
@@ -36,11 +39,15 @@ def gemini_ai_pipeline():
             
             genai.configure(api_key=api_key)
             model = genai.GenerativeModel('gemini-pro')
-            response = model.generate_content(f"Summarize: {content['text']}")
+            # Enforce connect and read timeouts (Sentinel 🛡️️)
+            response = model.generate_content(
+                f"Summarize: {content['text']}",
+                request_options={"timeout": 30}
+            )
             return {'summary': response.text, 'mode': 'api'}
-        except Exception as e:
-            print(f"Error: {e}")
-            return {'summary': 'Error occurred', 'mode': 'error'}
+        except Exception as err:
+            logger.exception("Pipeline task execution failed: %s", type(err).__name__)
+            raise RuntimeError("Pipeline task execution failed") from err
     
     @task()
     def store_results(results: dict):

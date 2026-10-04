@@ -5,6 +5,9 @@ Demonstrates GitHub API integration
 from datetime import datetime, timedelta
 from airflow.decorators import dag, task
 from airflow.models import Variable
+import logging
+
+logger = logging.getLogger(__name__)
 
 @dag(
     dag_id='github_repo_monitor',
@@ -28,7 +31,8 @@ def github_repo_monitor():
                 print("⚠️  DEMO MODE: Set GITHUB_TOKEN variable to use real API")
                 return {'name': repo_name, 'stars': 34500, 'mode': 'demo'}
             
-            g = Github(token)
+            # Enforce connect and read timeouts (Sentinel 🛡️️)
+            g = Github(token, timeout=30)
             repo = g.get_repo(repo_name)
             return {
                 'name': repo.full_name,
@@ -37,9 +41,9 @@ def github_repo_monitor():
                 'open_issues': repo.open_issues_count,
                 'mode': 'api'
             }
-        except Exception as e:
-            print(f"Error: {e}")
-            return {'name': 'error', 'mode': 'error'}
+        except Exception as err:
+            logger.exception("Pipeline task execution failed: %s", type(err).__name__)
+            raise RuntimeError("Pipeline task execution failed") from err
     
     @task()
     def analyze_health(repo_info: dict):
