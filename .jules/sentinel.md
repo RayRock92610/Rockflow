@@ -6,3 +6,7 @@
 **Vulnerability:** Command injection vulnerability in `backup_kesselflow.sh` where `tar -czf "$ARCHIVE" $FILES` is used. Unquoted variable expansion like `$FILES` in a command is vulnerable to option injection. If a malicious file name starts with `--checkpoint`, `tar` would execute arbitrary code.
 **Learning:** Using unquoted shell variables containing file names in commands like `tar` is a critical risk, allowing option injection and code execution.
 **Prevention:** Always use `find -print0` piped to commands that support `--null -T -` (like `tar`) or `xargs -0` to handle file names safely and prevent option injection.
+## 2024-05-18 - Fix Command Injection Bypass via Strict Allowlist
+**Vulnerability:** A previous fix for command injection relied on a naive substring blocklist (`forbidden=["rm -rf", "sudo"]`) to prevent arbitrary command execution. This blocklist is easily bypassed (e.g. `rm -r /`, or using other dangerous binaries like `wget`).
+**Learning:** Substring blocklists for command validation are fundamentally insecure and lead to false security. They can always be bypassed by using alternative syntax or unlisted dangerous binaries.
+**Prevention:** Implement strict defense-in-depth allowlists for command validation. Extract the base executable (e.g., using `shlex.split` and `shutil.which`) and explicitly check it against a hardcoded set of allowed binaries.

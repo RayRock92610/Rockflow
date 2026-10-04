@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import os, sqlite3, logging, subprocess, sys, shlex
+import os, sqlite3, logging, subprocess, sys, shlex, shutil
 from datetime import datetime
 from threading import Thread, Lock
 import importlib
@@ -88,7 +88,32 @@ def generate_content(prompt,max_tokens=150,top_k=5):
     resp=llm(full_prompt,max_tokens=max_tokens)
     return resp.get("choices",[{}])[0].get("text","[No output]")
 
+# ---------------------------
+# Rayrock Decree enforcement
+def obey_rayrock_decree(task_type, content):
+    if task_type == "content_creation":
+        return True, None
+    try:
+        cmd_args = shlex.split(content)
+    except ValueError:
+        return False, "Command is not permitted by security policy"
+    if not cmd_args:
+        return False, "Command is not permitted by security policy"
+    executable = shutil.which(cmd_args[0])
+    if not executable:
+        return False, "Command is not permitted by security policy"
+    basename = os.path.basename(executable)
+    # Strict binary allowlist
+    ALLOWED_BINARIES = {"echo", "ls", "python3", "sqlite3", "cat", "grep", "date"}
+    if basename not in ALLOWED_BINARIES:
+        return False, "Command is not permitted by security policy"
+    return True, None
+
 def execute_task(task_id,task_type,content):
+    allowed,msg=obey_rayrock_decree(task_type, content)
+    if not allowed:
+        db_execute("UPDATE tasks SET status=?, result=? WHERE id=?", ("blocked", msg, task_id))
+        return
     try:
         if task_type=="content_creation":
             output=generate_content(content)

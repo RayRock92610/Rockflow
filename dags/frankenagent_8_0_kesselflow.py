@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import os, sqlite3, logging, time, threading, subprocess, shlex
+import os, sqlite3, logging, time, threading, subprocess, shlex, shutil
 from datetime import datetime
 import numpy as np
 import requests
@@ -62,9 +62,22 @@ def update_vector(task_id, content):
 # ---------------------------
 # Rayrock Decree enforcement
 def obey_rayrock_decree(task_type, content):
-    forbidden=["rm -rf","sudo"]
-    for f in forbidden:
-        if f in content: return False, "Blocked by Rayrock Decree"
+    if task_type == "content_creation":
+        return True, None
+    try:
+        cmd_args = shlex.split(content)
+    except ValueError:
+        return False, "Command is not permitted by security policy"
+    if not cmd_args:
+        return False, "Command is not permitted by security policy"
+    executable = shutil.which(cmd_args[0])
+    if not executable:
+        return False, "Command is not permitted by security policy"
+    basename = os.path.basename(executable)
+    # Strict binary allowlist
+    ALLOWED_BINARIES = {"echo", "ls", "python3", "sqlite3", "cat", "grep", "date"}
+    if basename not in ALLOWED_BINARIES:
+        return False, "Command is not permitted by security policy"
     return True, None
 
 # ---------------------------
