@@ -2,7 +2,7 @@
 Gemini AI Pipeline
 Demonstrates Google Gemini API integration
 """
-from datetime import datetime, timedelta
+from datetime import datetime
 from airflow.decorators import dag, task
 from airflow.models import Variable
 
