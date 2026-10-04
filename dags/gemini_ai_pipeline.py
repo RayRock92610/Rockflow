@@ -3,8 +3,11 @@ Gemini AI Pipeline
 Demonstrates Google Gemini API integration
 """
 from datetime import datetime, timedelta
+import logging
 from airflow.decorators import dag, task
 from airflow.models import Variable
+
+logger = logging.getLogger(__name__)
 
 @dag(
     dag_id='gemini_ai_pipeline',
@@ -38,9 +41,9 @@ def gemini_ai_pipeline():
             model = genai.GenerativeModel('gemini-pro')
             response = model.generate_content(f"Summarize: {content['text']}")
             return {'summary': response.text, 'mode': 'api'}
-        except Exception as e:
-            print(f"Error: {e}")
-            return {'summary': 'Error occurred', 'mode': 'error'}
+        except Exception as err:
+            logger.error("Task execution encountered an error of type %s", type(err).__name__)
+            raise RuntimeError("Task execution failed securely") from None
     
     @task()
     def store_results(results: dict):

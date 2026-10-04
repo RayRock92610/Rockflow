@@ -10,3 +10,7 @@
 **Vulnerability:** Insecure deserialization via `np.load(VECTOR_PATH, allow_pickle=True)`. Loading unverified numpy arrays with `allow_pickle=True` can lead to Arbitrary Code Execution (ACE) because it uses Python's `pickle` module under the hood.
 **Learning:** Storing dictionaries in numpy files requires `allow_pickle=True`, which bypasses security controls and introduces critical ACE/RCE vectors if the storage file is ever tampered with or replaced.
 **Prevention:** Always use safe serialization formats like JSON for dictionaries, even if they contain numpy arrays. Convert arrays to lists for JSON storage, and reconstruct them upon loading.
+## 2025-02-23 - Prevent Information Leakage in Airflow DAGs
+**Vulnerability:** Raw exceptions were being printed directly to stdout using `print(f"Error: {e}")` in Airflow DAG execution tasks (specifically in `gemini_ai_pipeline.py` and `github_repo_monitor.py`).
+**Learning:** Airflow task execution captures standard output directly into task logs visible across the UI and downstream reporting. Printing raw exception strings leaks sensitive internal information, including file paths, credentials, and API environment details, making the infrastructure susceptible to reconnaissance.
+**Prevention:** Always use standard logging via `logging.getLogger(__name__)` to sanitize logged errors (e.g., logging `type(err).__name__`). Furthermore, enforce explicit exception chaining using `raise RuntimeError(...) from None` to securely fail the task without exposing internal tracebacks or AST security scanner flags.

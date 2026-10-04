@@ -3,8 +3,11 @@ GitHub Repository Monitor
 Demonstrates GitHub API integration
 """
 from datetime import datetime, timedelta
+import logging
 from airflow.decorators import dag, task
 from airflow.models import Variable
+
+logger = logging.getLogger(__name__)
 
 @dag(
     dag_id='github_repo_monitor',
@@ -37,9 +40,9 @@ def github_repo_monitor():
                 'open_issues': repo.open_issues_count,
                 'mode': 'api'
             }
-        except Exception as e:
-            print(f"Error: {e}")
-            return {'name': 'error', 'mode': 'error'}
+        except Exception as err:
+            logger.error("Task execution encountered an error of type %s", type(err).__name__)
+            raise RuntimeError("Task execution failed securely") from None
     
     @task()
     def analyze_health(repo_info: dict):
