@@ -7,3 +7,8 @@
 **Vulnerability:** Invoking `requests.get()` without `stream=True` directly fetches external data (e.g. `r.json()`) leading to unbounded memory allocation if the remote payload is excessively large or infinite, which risks Denial-of-Service (DoS) and potential system crashes.
 **Learning:** External API dependencies should be treated as untrusted input. Consuming unbounded network data using `r.json()` or `r.content` is insecure in automated environments.
 **Prevention:** For any Python `requests` HTTP calls, use `stream=True` and manually iterate over contents using `iter_content(chunk_size)`. Implement a maximum bounds check on the accumulated byte size, raise errors if exceeded, and then decode bytes securely with `errors='replace'` before JSON processing.
+
+## 2026-10-04 - Fix Swallowed Exceptions and Traceback Leakage Risk
+**Vulnerability:** Completely swallowing exceptions hides operational and security-relevant failures (e.g. DoS, unhandled crashes) from system logs. Conversely, naive error handling can inadvertently leak stack traces, paths, and internal variables to logs.
+**Learning:** To balance security with observability, do not completely swallow errors or leak full stack traces. Always capture the exception type internally to facilitate monitoring.
+**Prevention:** Catch exceptions specifically and log the exception type securely (e.g., `logger.error("Failed due to %s", type(e).__name__)`) without using `exc_info=True`, `logging.exception()`, or directly logging `str(e)`. Add security comments to contextualize this approach.

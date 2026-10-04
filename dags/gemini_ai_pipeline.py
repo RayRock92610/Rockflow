@@ -38,9 +38,11 @@ def gemini_ai_pipeline():
             model = genai.GenerativeModel('gemini-pro')
             response = model.generate_content(f"Summarize: {content['text']}")
             return {'summary': response.text, 'mode': 'api'}
-        except Exception:
+        except Exception as e:
+            # 🛡️ Security note: Log the exception type securely without leaking full stack traces.
             import logging
-            logging.error("Gemini API request failed.")
+            error_type = type(e).__name__
+            logging.error("Gemini API request failed due to %s.", error_type)
             return {'summary': 'Error occurred', 'mode': 'error'}
     
     @task()
