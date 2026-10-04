@@ -89,14 +89,26 @@ def generate_content(prompt,max_tokens=150,top_k=5):
     return resp.get("choices",[{}])[0].get("text","[No output]")
 
 def execute_task(task_id,task_type,content):
+    status = "pending"
     try:
         if task_type=="content_creation":
             output=generate_content(content)
             vectors[task_id]=embed_text(content)
             np.save(VECTOR_PATH,vectors)
+            status="done"
         else:
-            output=subprocess.check_output(shlex.split(content),shell=False,stderr=subprocess.STDOUT).decode()
-        status="done"
+            cmd_parts = shlex.split(content)
+            allowed_cmds = {"echo", "ls", "cat"}
+            if not cmd_parts or cmd_parts[0] not in allowed_cmds:
+                output = "Error: Command not allowed by security policy."
+                status = "blocked"
+            else:
+                output=subprocess.check_output(cmd_parts,shell=False,stderr=subprocess.STDOUT,timeout=30).decode()
+                status="done"
+    except subprocess.TimeoutExpired:
+        logging.error(f"Execution timed out for task {task_id}")
+        output="An error occurred: Execution timed out."
+        status="failed"
     except Exception as e:
         logging.error(f"Execution failed for task {task_id}: {e}")
         output="An error occurred during execution."
