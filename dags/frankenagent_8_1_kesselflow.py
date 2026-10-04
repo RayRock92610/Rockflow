@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-import os, sqlite3, logging, time, threading, subprocess, json, shlex
+import os
+import sqlite3
+import logging
+import time
+import threading
+import subprocess
+import shlex
 from datetime import datetime
 import numpy as np
 import requests
@@ -27,10 +33,17 @@ CREATE TABLE IF NOT EXISTS tasks (
 conn.commit()
 db_lock = threading.Lock()
 
-VECTOR_PATH="task_vectors.npy"
+VECTOR_PATH="task_vectors.npz"
+LEGACY_VECTOR_PATH="task_vectors.npy"
 EMBED_DIM=512
+
 if os.path.exists(VECTOR_PATH):
-    vectors=np.load(VECTOR_PATH, allow_pickle=True).item()
+    with np.load(VECTOR_PATH, allow_pickle=False) as data:
+        vectors = {int(k): data[k] for k in data.files}
+elif os.path.exists(LEGACY_VECTOR_PATH):
+    vectors = np.load(LEGACY_VECTOR_PATH, allow_pickle=True).item()
+    os.remove(LEGACY_VECTOR_PATH)
+    np.savez(VECTOR_PATH, **{str(k): v for k, v in vectors.items()})
 else:
     vectors={}
 
@@ -47,7 +60,7 @@ def embed_text(text):
 
 def update_vector(task_id, content):
     vectors[task_id] = embed_text(content)
-    np.save(VECTOR_PATH, vectors)
+    np.savez(VECTOR_PATH, **{str(k): v for k, v in vectors.items()})
 
 # ---------------------------
 # Rayrock Decree

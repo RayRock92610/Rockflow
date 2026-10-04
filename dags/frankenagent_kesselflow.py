@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-import os, sqlite3, logging, subprocess, sys, shlex
+import os
+import sqlite3
+import logging
+import subprocess
+import sys
+import shlex
 from datetime import datetime
 from threading import Thread, Lock
 import importlib
@@ -52,9 +57,16 @@ def db_execute(query, params=()):
 
 # --- Vectors ---
 EMBED_DIM=512
-VECTOR_PATH="task_vectors.npy"
+VECTOR_PATH="task_vectors.npz"
+LEGACY_VECTOR_PATH="task_vectors.npy"
+
 if os.path.exists(VECTOR_PATH):
-    vectors=np.load(VECTOR_PATH,allow_pickle=True).item()
+    with np.load(VECTOR_PATH, allow_pickle=False) as data:
+        vectors = {int(k): data[k] for k in data.files}
+elif os.path.exists(LEGACY_VECTOR_PATH):
+    vectors = np.load(LEGACY_VECTOR_PATH, allow_pickle=True).item()
+    os.remove(LEGACY_VECTOR_PATH)
+    np.savez(VECTOR_PATH, **{str(k): v for k, v in vectors.items()})
 else:
     vectors={}
 
@@ -93,7 +105,7 @@ def execute_task(task_id,task_type,content):
         if task_type=="content_creation":
             output=generate_content(content)
             vectors[task_id]=embed_text(content)
-            np.save(VECTOR_PATH,vectors)
+            np.savez(VECTOR_PATH, **{str(k): v for k, v in vectors.items()})
         else:
             output=subprocess.check_output(shlex.split(content),shell=False,stderr=subprocess.STDOUT).decode()
         status="done"
