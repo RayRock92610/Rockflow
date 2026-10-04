@@ -2,7 +2,7 @@
 GitHub Repository Monitor
 Demonstrates GitHub API integration
 """
-from datetime import datetime, timedelta
+from datetime import datetime
 from airflow.decorators import dag, task
 from airflow.models import Variable
 
