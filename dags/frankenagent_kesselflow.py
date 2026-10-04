@@ -51,10 +51,12 @@ def db_execute(query, params=()):
         return None
 
 # --- Vectors ---
+import json
 EMBED_DIM=512
-VECTOR_PATH="task_vectors.npy"
+VECTOR_PATH="task_vectors.json"
 if os.path.exists(VECTOR_PATH):
-    vectors=np.load(VECTOR_PATH,allow_pickle=True).item()
+    with open(VECTOR_PATH, "r") as f:
+        vectors={int(k): np.array(v, dtype="float32") for k,v in json.load(f).items()}
 else:
     vectors={}
 
@@ -93,7 +95,9 @@ def execute_task(task_id,task_type,content):
         if task_type=="content_creation":
             output=generate_content(content)
             vectors[task_id]=embed_text(content)
-            np.save(VECTOR_PATH,vectors)
+            import json
+            with open(VECTOR_PATH, "w") as f:
+                json.dump({str(k): v.tolist() for k, v in vectors.items()}, f)
         else:
             output=subprocess.check_output(shlex.split(content),shell=False,stderr=subprocess.STDOUT).decode()
         status="done"

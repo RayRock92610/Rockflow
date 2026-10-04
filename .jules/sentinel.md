@@ -6,3 +6,7 @@
 **Vulnerability:** Command injection vulnerability in `backup_kesselflow.sh` where `tar -czf "$ARCHIVE" $FILES` is used. Unquoted variable expansion like `$FILES` in a command is vulnerable to option injection. If a malicious file name starts with `--checkpoint`, `tar` would execute arbitrary code.
 **Learning:** Using unquoted shell variables containing file names in commands like `tar` is a critical risk, allowing option injection and code execution.
 **Prevention:** Always use `find -print0` piped to commands that support `--null -T -` (like `tar`) or `xargs -0` to handle file names safely and prevent option injection.
+## 2026-10-04 - Insecure Deserialization in Frankenagent Vectors
+**Vulnerability:** Insecure deserialization via `np.load(..., allow_pickle=True)` allowing arbitrary bytecode execution when parsing memory vectors.
+**Learning:** Using pickle-backed NumPy loaders for vector storage creates arbitrary code execution vulnerabilities; standard library `json` serialization provides strict type boundaries without object deserialization side effects.
+**Prevention:** Enforce `allow_pickle=False` on all NumPy file loaders or standardize on pure JSON/safetensors for state persistence.
