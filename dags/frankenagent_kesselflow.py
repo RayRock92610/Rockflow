@@ -129,6 +129,7 @@ def execute_task(task_id,task_type,content):
     if not allowed:
         db_execute("UPDATE tasks SET status=?, result=? WHERE id=?", ("blocked", msg, task_id))
         return
+    status = "pending"
     try:
         if task_type=="content_creation":
             output=generate_content(content)
