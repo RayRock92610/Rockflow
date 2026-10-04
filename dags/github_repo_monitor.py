@@ -2,15 +2,15 @@
 GitHub Repository Monitor
 Demonstrates GitHub API integration
 """
-from datetime import datetime, timedelta
-from airflow.decorators import dag, task
+from datetime import datetime
+from airflow.sdk import dag, task
 from airflow.models import Variable
 
 @dag(
     dag_id='github_repo_monitor',
     default_args={'owner': 'airflow', 'retries': 2},
     description='Monitor GitHub repositories',
-    schedule_interval='@hourly',
+    schedule='@hourly',
     start_date=datetime(2024, 1, 1),
     catchup=False,
     tags=['github', 'devops'],
