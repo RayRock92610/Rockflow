@@ -104,10 +104,12 @@ def execute_task(task_id, task_type, content):
         else:
             output = subprocess.check_output(cmd_tokens, shell=False, stderr=subprocess.STDOUT, text=True, timeout=30)
         status = "done"
-    except Exception as e:
-        error_type = type(e).__name__
-        logging.error("Task failed due to %s for task_id=%s", error_type, task_id)
-        output = json.dumps({"status": "FAILED", "error_type": error_type})
+    except Exception as err:
+        logging.error("Task execution encountered an unhandled exception: %s", type(err).__name__, exc_info=True)
+        output = json.dumps({
+            "status": "error",
+            "message": "An internal error occurred during task processing."
+        })
         status = "failed"
     db_execute("UPDATE tasks SET status=?, result=? WHERE id=?", (status, output, task_id))
 
@@ -127,7 +129,7 @@ def fetch_reddit(subreddit="python", limit=5):
     try:
         url=f"https://www.reddit.com/r/{subreddit}/new.json?limit={limit}"
         headers={"User-Agent":"KesselFlowAgent/0.1"}
-        r=requests.get(url, headers=headers, timeout=10, stream=True)
+        r=requests.get(url, headers=headers, timeout=(10.0, 60.0), stream=True)
         r.raw.decode_content = True
         accumulated_data = b""
         max_bytes = 5 * 1024 * 1024  # 5MB limit
@@ -142,9 +144,8 @@ def fetch_reddit(subreddit="python", limit=5):
             title=p["data"]["title"]
             db_execute("INSERT INTO tasks (timestamp,type,content,status,result) VALUES (?,?,?,?,?)",
                        (datetime.now().isoformat(),"content_creation",f"[Reddit {subreddit}] {title}","pending",None))
-    except Exception as e:
-        error_type = type(e).__name__
-        logging.error("Reddit fetch failed due to %s", error_type)
+    except Exception as err:
+        logging.error("Reddit fetch failed: %s", type(err).__name__, exc_info=True)
 
 def fetch_youtube_transcripts(video_ids):
     for vid in video_ids:
@@ -154,10 +155,8 @@ def fetch_youtube_transcripts(video_ids):
             text = " ".join([x['text'] for x in transcript])
             db_execute("INSERT INTO tasks (timestamp,type,content,status,result) VALUES (?,?,?,?,?)",
                        (datetime.now().isoformat(),"content_creation",f"[YouTube {vid}] {text[:500]}","pending",None))
-        except Exception as e:
-            # 🛡️ Security note: Log the exception type securely without leaking full stack traces.
-            error_type = type(e).__name__
-            logging.warning(f"YouTube transcript failed due to {error_type} for {vid}")
+        except Exception as err:
+            logging.error("YouTube transcript failed for %s: %s", vid, type(err).__name__, exc_info=True)
 
 def auto_ingest_loop():
     while True:
