@@ -129,7 +129,6 @@ def execute_task(task_id,task_type,content):
     if not allowed:
         db_execute("UPDATE tasks SET status=?, result=? WHERE id=?", ("blocked", msg, task_id))
         return
-    status = "pending"
     try:
         if task_type=="content_creation":
             output=generate_content(content)
@@ -142,10 +141,12 @@ def execute_task(task_id,task_type,content):
         else:
             output = subprocess.check_output(cmd_tokens, shell=False, stderr=subprocess.STDOUT, text=True, timeout=30)
         status="done"
-    except Exception as e:
-        error_type = type(e).__name__
-        logging.error("Task failed due to %s for task_id=%s", error_type, task_id)
-        output = json.dumps({"status": "FAILED", "error_type": error_type})
+    except Exception as err:
+        logging.error("Task execution encountered an unhandled exception: %s", type(err).__name__, exc_info=True)
+        output = json.dumps({
+            "status": "error",
+            "message": "An internal error occurred during task processing."
+        })
         status="failed"
     db_execute("UPDATE tasks SET status=?, result=? WHERE id=?", (status,output,task_id))
 

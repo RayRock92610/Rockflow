@@ -37,11 +37,10 @@ def github_repo_monitor():
                 'open_issues': repo.open_issues_count,
                 'mode': 'api'
             }
-        except Exception as e:
-            # 🛡️ Security note: Log the exception type securely without leaking full stack traces.
+        except Exception as err:
             import logging
-            error_type = type(e).__name__
-            logging.error("GitHub API request failed due to %s.", error_type)
+            # 🛡️ Security note: Log the exception type securely without leaking full stack traces.
+            logging.error("GitHub API request failed due to %s.", type(err).__name__, exc_info=True)
             return {'name': 'error', 'mode': 'error'}
     
     @task()
