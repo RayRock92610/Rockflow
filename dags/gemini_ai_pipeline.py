@@ -2,7 +2,7 @@
 Gemini AI Pipeline
 Demonstrates Google Gemini API integration
 """
-from datetime import datetime, timedelta
+from datetime import datetime
 from airflow.decorators import dag, task
 from airflow.models import Variable
 
@@ -36,7 +36,8 @@ def gemini_ai_pipeline():
             
             genai.configure(api_key=api_key)
             model = genai.GenerativeModel('gemini-pro')
-            response = model.generate_content(f"Summarize: {content['text']}")
+            # 🛡️ Sentinel: Enforce network timeout
+            response = model.generate_content(f"Summarize: {content['text']}", request_options={"timeout": 30})
             return {'summary': response.text, 'mode': 'api'}
         except Exception as e:
             # 🛡️ Security note: Log the exception type securely without leaking full stack traces.
