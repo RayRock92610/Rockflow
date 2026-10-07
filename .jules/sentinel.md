@@ -12,3 +12,7 @@
 **Vulnerability:** Denial of Service (DoS) risks via unbounded network calls when integrating with external services (e.g., GitHub, Gemini APIs).
 **Learning:** Default timeout values for external SDK connections (or requests libraries) may be extremely high or nonexistent, leading to worker exhaustion if the external service hangs.
 **Prevention:** Always enforce explicit read and connect timeouts (e.g., `timeout=30` or `request_options={"timeout": 30}`) when initializing clients or making network requests with external API SDKs.
+## 2026-10-07 - [Path Traversal / Wrapper Script Execution in Subprocess]
+**Vulnerability:** Command allowlist logic in `obey_rayrock_decree` checked only the basename of the given executable name, allowing an attacker to bypass the allowlist using directory path traversal (e.g., `./malicious/git`).
+**Learning:** Checking only `os.path.basename` for command authorization permits unauthorized local wrapper scripts matching the name of an allowed binary to be executed, breaking the intended sandbox isolation.
+**Prevention:** explicitly reject directory separators in command tokens (e.g., `if os.path.dirname(tokens[0]): return False`), and use `shutil.which()` to resolve absolute paths of system binaries before updating the invocation token for `subprocess.check_output`.
