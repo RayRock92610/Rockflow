@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
-import os, sqlite3, logging, time, threading, subprocess, json, shlex
+import os
+import sqlite3
+import logging
+import time
+import threading
+import subprocess
+import json
+import shlex
+import shutil
 from datetime import datetime
 import numpy as np
 import requests
@@ -78,10 +86,19 @@ def obey_rayrock_decree(task_type, content):
     if not tokens:
         return False, "Invalid command formatting.", None
 
+    if os.path.dirname(tokens[0]):
+        return False, "Directory separators are not allowed in command name.", None
+
     executable = os.path.basename(tokens[0])
 
     if executable not in ALLOWED_COMMANDS:
         return False, f"Command '{executable}' is unauthorized by decree.", None
+
+    resolved_path = shutil.which(executable)
+    if not resolved_path:
+        return False, f"Command '{executable}' not found in PATH.", None
+
+    tokens[0] = resolved_path
 
     if executable == "python3" and any(arg in ("-c", "-m") for arg in tokens[1:]):
         return False, "Arbitrary execution flags (-c, -m) forbidden for python3.", None
