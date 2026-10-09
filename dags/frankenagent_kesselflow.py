@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import os, sqlite3, logging, subprocess, sys, shlex
+import os, sqlite3, logging, subprocess, sys, shlex, shutil
 from datetime import datetime
 from threading import Thread, Lock
 import importlib
@@ -114,7 +114,16 @@ def obey_rayrock_decree(task_type, content):
     if not tokens:
         return False, "Invalid command formatting.", None
 
-    executable = os.path.basename(tokens[0])
+    # 🛡️ Sentinel: Prevent path traversal/wrapper script bypasses by explicitly rejecting commands with directory separators
+    if os.path.dirname(tokens[0]):
+        return False, "Directory separators in commands are forbidden by decree.", None
+
+    # 🛡️ Sentinel: Resolve the binary to ensure it exists and prevent path manipulation before checking the allowlist
+    resolved_path = shutil.which(tokens[0])
+    if not resolved_path:
+        return False, f"Command '{tokens[0]}' not found in PATH.", None
+
+    executable = os.path.basename(resolved_path)
 
     if executable not in ALLOWED_COMMANDS:
         return False, f"Command '{executable}' is unauthorized by decree.", None

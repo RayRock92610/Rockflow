@@ -12,3 +12,7 @@
 **Vulnerability:** Denial of Service (DoS) risks via unbounded network calls when integrating with external services (e.g., GitHub, Gemini APIs).
 **Learning:** Default timeout values for external SDK connections (or requests libraries) may be extremely high or nonexistent, leading to worker exhaustion if the external service hangs.
 **Prevention:** Always enforce explicit read and connect timeouts (e.g., `timeout=30` or `request_options={"timeout": 30}`) when initializing clients or making network requests with external API SDKs.
+## 2026-10-04 - Command Allowlisting Path Traversal Vulnerability
+**Vulnerability:** Found `os.path.basename(tokens[0])` used to validate against an allowlist in multiple DAG files (`frankenagent_8_0_kesselflow.py`, `frankenagent_8_1_kesselflow.py`, `frankenagent_kesselflow.py`). This allows an attacker to bypass the allowlist using a path or wrapper script with a matching name (e.g., `/tmp/malicious/git`).
+**Learning:** Naive denylists and basic allowlists using `basename` fail against path or argument tampering.
+**Prevention:** Explicitly reject commands with directory separators (`if os.path.dirname(tokens[0]): return False`). Then, use `shutil.which` to safely resolve the command from the system PATH before checking its `basename` against the strict executable allowlist.
