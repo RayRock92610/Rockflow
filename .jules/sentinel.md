@@ -16,3 +16,8 @@
 **Vulnerability:** Found `os.path.basename(tokens[0])` used to validate against an allowlist in multiple DAG files (`frankenagent_8_0_kesselflow.py`, `frankenagent_8_1_kesselflow.py`, `frankenagent_kesselflow.py`). This allows an attacker to bypass the allowlist using a path or wrapper script with a matching name (e.g., `/tmp/malicious/git`).
 **Learning:** Naive denylists and basic allowlists using `basename` fail against path or argument tampering.
 **Prevention:** Explicitly reject commands with directory separators (`if os.path.dirname(tokens[0]): return False`). Then, use `shutil.which` to safely resolve the command from the system PATH before checking its `basename` against the strict executable allowlist.
+
+## 2026-10-04 - Insecure Variable.get Defaults in Airflow DAGs
+**Vulnerability:** Sensitive API keys and tokens were retrieved using `Variable.get(..., default_var="DEMO_MODE")`, which can expose insecure fallback defaults or leak tokens into DAG parsing logs if unset.
+**Learning:** Hardcoded string fallbacks for sensitive variables introduce credential exposure risks, especially in orchestration environments.
+**Prevention:** Always use strictly empty/non-functional defaults (e.g., `default_var=""`) for sensitive Airflow variables and validate their presence inside task execution logic without exposing key names in error messages.

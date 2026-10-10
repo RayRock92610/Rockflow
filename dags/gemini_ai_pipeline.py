@@ -28,9 +28,9 @@ def gemini_ai_pipeline():
     def analyze_with_gemini(content: dict):
         try:
             import google.generativeai as genai
-            api_key = Variable.get("GEMINI_API_KEY", default_var="DEMO_MODE")
+            api_key = Variable.get("GEMINI_API_KEY", default_var="")
             
-            if api_key == "DEMO_MODE":
+            if not api_key:
                 print("⚠️  DEMO MODE: Set GEMINI_API_KEY variable to use real API")
                 return {'summary': 'Demo summary', 'mode': 'demo'}
             
