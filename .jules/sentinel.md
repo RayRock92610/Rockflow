@@ -16,3 +16,8 @@
 **Vulnerability:** Found `os.path.basename(tokens[0])` used to validate against an allowlist in multiple DAG files (`frankenagent_8_0_kesselflow.py`, `frankenagent_8_1_kesselflow.py`, `frankenagent_kesselflow.py`). This allows an attacker to bypass the allowlist using a path or wrapper script with a matching name (e.g., `/tmp/malicious/git`).
 **Learning:** Naive denylists and basic allowlists using `basename` fail against path or argument tampering.
 **Prevention:** Explicitly reject commands with directory separators (`if os.path.dirname(tokens[0]): return False`). Then, use `shutil.which` to safely resolve the command from the system PATH before checking its `basename` against the strict executable allowlist.
+
+## 2024-10-27 - Information Leakage in Task Execution
+**Vulnerability:** Found `output=str(e)` in multiple files (`frankenagent_8_0_kesselflow.py`, `frankenagent_8_1_kesselflow.py`, `frankenagent_kesselflow.py`). This allows stack traces and internal exception details (such as local paths, environmental data, or syntax details) to be leaked into the database when a task fails.
+**Learning:** Returning raw exception strings directly into persistent storage or APIs can inadvertently expose system internals. An attacker could intentionally trigger errors to map the environment.
+**Prevention:** Catch generic exceptions and log them securely using `logging.error(..., exc_info=True)` while returning a sanitized, generic error message (e.g., "An error occurred during execution.") to the user or database.
