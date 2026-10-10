@@ -21,3 +21,8 @@
 **Vulnerability:** Found `output=str(e)` in multiple files (`frankenagent_8_0_kesselflow.py`, `frankenagent_8_1_kesselflow.py`, `frankenagent_kesselflow.py`). This allows stack traces and internal exception details (such as local paths, environmental data, or syntax details) to be leaked into the database when a task fails.
 **Learning:** Returning raw exception strings directly into persistent storage or APIs can inadvertently expose system internals. An attacker could intentionally trigger errors to map the environment.
 **Prevention:** Catch generic exceptions and log them securely using `logging.error(..., exc_info=True)` while returning a sanitized, generic error message (e.g., "An error occurred during execution.") to the user or database.
+
+## 2026-10-04 - Hardcoded Fallback Strings for Secrets
+**Vulnerability:** Found `Variable.get("GEMINI_API_KEY", default_var="DEMO_MODE")` and `Variable.get("GITHUB_TOKEN", default_var="DEMO_MODE")`. Using string fallbacks like `"DEMO_MODE"` for sensitive tokens can lead to accidental authorization bypasses or leakage if the fallback string is inadvertently used as an actual token or leaked in logs.
+**Learning:** For sensitive variables or tokens retrieved from configuration or environment, a non-empty fallback string may mask a missing configuration and cause unpredictable downstream behavior.
+**Prevention:** Use strictly empty defaults (e.g., `default_var=""`) instead of fallback strings, validating their presence safely within the task.

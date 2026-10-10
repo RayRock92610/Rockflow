@@ -1,10 +1,17 @@
 #!/usr/bin/env python3
-import os, sqlite3, logging, subprocess, sys, shlex, shutil
-from datetime import datetime
-from threading import Thread, Lock
 import importlib
-import numpy as np
 import json
+import logging
+import os
+import shlex
+import shutil
+import sqlite3
+import subprocess
+import sys
+from datetime import datetime
+from threading import Lock, Thread
+
+import numpy as np
 
 # --- Auto Module Installer ---
 modules = ["numpy","faiss-cpu"]
