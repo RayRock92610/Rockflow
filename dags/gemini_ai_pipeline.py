@@ -3,8 +3,10 @@ Gemini AI Pipeline
 Demonstrates Google Gemini API integration
 """
 from datetime import datetime
+
 from airflow.decorators import dag, task
 from airflow.models import Variable
+
 
 @dag(
     dag_id='gemini_ai_pipeline',
@@ -28,9 +30,10 @@ def gemini_ai_pipeline():
     def analyze_with_gemini(content: dict):
         try:
             import google.generativeai as genai
-            api_key = Variable.get("GEMINI_API_KEY", default_var="DEMO_MODE")
+            # 🛡️ Sentinel: Use strictly empty defaults for sensitive tokens instead of fallback strings to prevent accidental leakage or bypasses.
+            api_key = Variable.get("GEMINI_API_KEY", default_var="")
             
-            if api_key == "DEMO_MODE":
+            if not api_key:
                 print("⚠️  DEMO MODE: Set GEMINI_API_KEY variable to use real API")
                 return {'summary': 'Demo summary', 'mode': 'demo'}
             

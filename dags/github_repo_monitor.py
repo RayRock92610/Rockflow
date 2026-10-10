@@ -3,8 +3,10 @@ GitHub Repository Monitor
 Demonstrates GitHub API integration
 """
 from datetime import datetime
+
 from airflow.decorators import dag, task
 from airflow.models import Variable
+
 
 @dag(
     dag_id='github_repo_monitor',
@@ -21,10 +23,11 @@ def github_repo_monitor():
     def get_repo_info():
         try:
             from github import Github
-            token = Variable.get("GITHUB_TOKEN", default_var="DEMO_MODE")
+            # 🛡️ Sentinel: Use strictly empty defaults for sensitive tokens instead of fallback strings to prevent accidental leakage or bypasses.
+            token = Variable.get("GITHUB_TOKEN", default_var="")
             repo_name = Variable.get("GITHUB_REPO", default_var="apache/airflow")
             
-            if token == "DEMO_MODE":
+            if not token:
                 print("⚠️  DEMO MODE: Set GITHUB_TOKEN variable to use real API")
                 return {'name': repo_name, 'stars': 34500, 'mode': 'demo'}
             

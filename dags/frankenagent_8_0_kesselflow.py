@@ -1,6 +1,15 @@
 #!/usr/bin/env python3
-import os, sqlite3, logging, time, threading, subprocess, json, shlex, shutil
+import json
+import logging
+import os
+import shlex
+import shutil
+import sqlite3
+import subprocess
+import threading
+import time
 from datetime import datetime
+
 import numpy as np
 import requests
 from youtube_transcript_api import YouTubeTranscriptApi
